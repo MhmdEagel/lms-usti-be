@@ -1,17 +1,14 @@
 package main
 
 import (
-  "net/http"
-
-  "github.com/gin-gonic/gin"
+	"github.com/MhmdEagel/lms-usti-be/env"
+	"github.com/MhmdEagel/lms-usti-be/model"
+	"github.com/MhmdEagel/lms-usti-be/router"
 )
 
 func main() {
-  r := gin.Default()
-  r.GET("/", func(c *gin.Context) {
-    c.JSON(http.StatusOK, gin.H{
-      "message": "Server is running",
-    })
-  })
-  r.Run()
+	model.ConnectDatabase()
+	r := router.InitRouter()
+	r.Run(env.DEFAULT_PORT)
+
 }

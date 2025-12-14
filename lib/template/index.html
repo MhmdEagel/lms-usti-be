@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verifikasi Email</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      .mail-heading {
+        background-color: oklch(42.4% 0.199 265.638);
+        color: white;
+        text-align: center;
+        padding: 10px 0;
+      }
+      .mail-desc {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 16px;
+      }
+      .main-btn {
+        text-decoration: none;
+        color: white;
+        background-color: oklch(42.4% 0.199 265.638);
+        border-radius: 10px;
+        margin: 0 auto;
+        padding: 10px 20px;
+      }
+
+      .btn-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 class="mail-heading">LMS USTI | Verifikasi Email</h1>
+    <div class="mail-desc">
+      Silahkan klik tombol di bawah untuk melakukan verifikasi email. Link hanya
+      valid untuk 10 menit.
+    </div>
+    <div class="btn-container">
+      <a class="main-btn" href="http://localhost:3000/auth/verify?token={{.Token}}">Verifikasi</a>
+    </div>
+  </body>
+</html>
