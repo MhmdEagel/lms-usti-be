@@ -15,15 +15,15 @@ func GetValidationMessage(err validator.ValidationErrors) string {
 	for _, v := range err {
 		switch v.Tag() {
 		case "required":
-			return fmt.Sprintf("The %s field is required.", strings.ToLower(v.Field()))
+			return fmt.Sprintf("%s harus diisi.", strings.ToLower(v.Field()))
 		case "min":
-			return fmt.Sprintf("The %s field must be at least %s characters long.", strings.ToLower(v.Field()), v.Param())
+			return fmt.Sprintf("%s minimal %s karakter", strings.ToLower(v.Field()), v.Param())
 		case "max":
-			return fmt.Sprintf("The %s field must be at most %s characters long.", strings.ToLower(v.Field()), v.Param())
+			return fmt.Sprintf("%s maksimal %s karakter.", strings.ToLower(v.Field()), v.Param())
 		case "email":
-			return fmt.Sprintf("The %s field must be a valid email address.", strings.ToLower(v.Field()))
+			return fmt.Sprintf("%s bukan email yang valid.", strings.ToLower(v.Field()))
 		case "oneof":
-			return fmt.Sprintf("The %s field is not a valid role.", strings.ToLower(v.Field()))
+			return fmt.Sprintf("%s bukan pilihan yang valid.", strings.ToLower(v.Field()))
 		default:
 			fmt.Println(v.Tag())
 		}

@@ -9,13 +9,14 @@ import (
 )
 
 type User struct {
-	ID            string `gorm:"primary_key;not null"`
-	Fullname      string `json:"fullname" gorm:"not null"`
-	Email         string `json:"email" gorm:"unique;not null"`
-	EmailVerified sql.NullTime
-	Image         sql.NullString
-	Password      string `json:"password" gorm:"not null"`
-	Role          string `json:"role" gorm:"not null"`
+	ID              string `gorm:"primary_key;not null"`
+	Fullname        string `json:"fullname" gorm:"not null"`
+	Email           string `json:"email" gorm:"unique;not null"`
+	EmailVerified   sql.NullTime
+	Image           sql.NullString
+	Password        string `json:"password" gorm:"not null"`
+	Role            string `json:"role" gorm:"not null"`
+	DosenClassrooms []Classroom `gorm:"foreignKey:DosenId"`
 }
 
 func (user *User) BeforeCreate(tx *gorm.DB) error {
@@ -34,6 +35,10 @@ type Login struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
+type ResendVerificationInput struct {
+	Email string  `json:"email" binding:"required,email"`
+}
+
 func NewUser(register *Register) *User {
 	return &User{Fullname: register.Fullname, Email: register.Email, Password: lib.HashPassword(register.Password), Role: register.Role}
 }

@@ -9,10 +9,9 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-
 func SendVerificationEmail(email, token string) error {
 	// Generate Template
-	t, err := template.ParseFiles("/template/index.html")
+	t, err := template.ParseFiles("lib/template/index.html")
 	if err != nil {
 		log.Println(err.Error())
 		return err
@@ -24,12 +23,12 @@ func SendVerificationEmail(email, token string) error {
 		Token: token,
 	})
 
-
 	// Send Email
 	mailer := gomail.NewMessage()
-	mailer.SetHeader("From", "LMS USTI")
+	mailer.SetHeader("From", "LMS USTI <muhammadeagel@gmail.com>")
 	mailer.SetHeader("To", email)
 	mailer.SetHeader("Subject", "LMS USTI | Verifikasi Email")
+	mailer.SetHeader("MIME-version", "1.0")
 	mailer.SetBody("text/html", body.String())
 	dialer := gomail.NewDialer(
 		env.CONFIG_SMTP_HOST,

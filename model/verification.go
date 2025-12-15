@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
 type VerificationToken struct {
 	ID      string    `gorm:"primary_key;not null"`
 	Email   string    `json:"email" gorm:"unique;not null"`
@@ -14,11 +15,9 @@ type VerificationToken struct {
 	Expires time.Time `json:"expires"`
 }
 
-
 type Verification struct {
 	Token string `json:"token" binding:"required"`
 }
-
 
 func (verification *VerificationToken) BeforeCreate(tx *gorm.DB) error {
 	id, err := uuid.NewRandom()
@@ -31,10 +30,11 @@ func NewVerificationToken(email string) *VerificationToken {
 	expires := time.Now().Add(10 * time.Minute)
 	return &VerificationToken{Email: email, Token: token, Expires: expires}
 }
-func CreateVerificationToken(token *VerificationToken) error {	
-	_, err := GetVerificationTokenByEmail(token.Email)
-	if err != nil {
-		return err
+func CreateVerificationToken(token *VerificationToken) error {
+	var t *VerificationToken
+	DB.Where("email = ?", token.Email).First(&t)
+	if t != nil {
+		DB.Where("email = ?", t.Email).Delete(&VerificationToken{})
 	}
 	DB.Create(&token)
 	return nil
@@ -43,7 +43,7 @@ func GetVerificationTokenByEmail(email string) (*VerificationToken, error) {
 	var token VerificationToken
 	res := DB.Where("email = ?", email).First(&token)
 	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-		return nil, errors.New("email tidak ditemukan")
+		return nil, errors.New("token tidak ditemukan")
 	}
 	return &token, nil
 }
@@ -51,7 +51,7 @@ func GetVerificationTokenByToken(token string) (*VerificationToken, error) {
 	var t VerificationToken
 	res := DB.Where("token = ?", token).First(&t)
 	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-		return nil, errors.New("email tidak ditemukan")
+		return nil, errors.New("token tidak ditemukan")
 	}
 	return &t, nil
 }
