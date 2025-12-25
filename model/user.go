@@ -9,14 +9,16 @@ import (
 )
 
 type User struct {
-	ID              string `gorm:"primary_key;not null"`
-	Fullname        string `json:"fullname" gorm:"not null"`
-	Email           string `json:"email" gorm:"unique;not null"`
-	EmailVerified   sql.NullTime
-	Image           sql.NullString
-	Password        string `json:"password" gorm:"not null"`
-	Role            string `json:"role" gorm:"not null"`
-	DosenClassrooms []Classroom `gorm:"foreignKey:DosenId"`
+	ID                     string         `json:"-" gorm:"primary_key;not null"`
+	Fullname               string         `json:"fullname" gorm:"not null"`
+	Email                  string         `json:"email" gorm:"unique;not null"`
+	EmailVerified          sql.NullTime   `json:"-"`
+	Image                  string         `json:",omitempty"`
+	Password               string         `json:"-" gorm:"not null"`
+	Role                   string         `json:"role" gorm:"not null"`
+	DosenClassrooms        []Classroom    `json:"dosenClassrooms,omitempty" gorm:"foreignKey:DosenId;"`
+	MahasiswaClassrooms    []Classroom    `json:"mahasiswaClassrooms,omitempty" gorm:"many2many:classroom_mahasiswas;constraint:OnDelete:CASCADE;"`
+	ClassroomAnnouncements []Announcement `json:"dosenAnnouncements,omitempty" gorm:"foreignKey:DosenId;constraint:OnDelete:CASCADE;"`
 }
 
 func (user *User) BeforeCreate(tx *gorm.DB) error {
@@ -36,7 +38,17 @@ type Login struct {
 	Password string `json:"password" binding:"required"`
 }
 type ResendVerificationInput struct {
-	Email string  `json:"email" binding:"required,email"`
+	Email string `json:"email" binding:"required,email"`
+}
+
+type JoinClassroomInput struct {
+	Code string `json:"code" binding:"required"`
+}
+
+type Me struct {
+	UserId string
+	Email  string
+	Role   string
 }
 
 func NewUser(register *Register) *User {
@@ -52,6 +64,15 @@ func CreateUser(user *User) error {
 func GetUserByEmail(email string) (*User, error) {
 	var user User
 	result := DB.Where("email = ?", email).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
+}
+
+func GetUserById(id string) (*User, error) {
+	var user User
+	result := DB.Where("id = ?", id).First(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}

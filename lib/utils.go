@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func GetValidationMessage(err validator.ValidationErrors) string {
@@ -39,4 +40,10 @@ func HashPassword(password string) string {
 func IsPasswordMatch(hashedPassword, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
+}
+
+func OmitFields(columns ...string) func(*gorm.DB) *gorm.DB {
+	return func(tx *gorm.DB) *gorm.DB {
+		return tx.Omit(columns...)
+	}
 }

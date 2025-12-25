@@ -8,7 +8,6 @@ import (
 
 func InitRouter() *gin.Engine {
 	r := gin.Default()
-	
 	api := r.Group("/lms-usti-api")
 	{
 		api.GET("", controller.Test)
@@ -20,9 +19,19 @@ func InitRouter() *gin.Engine {
 			auth.POST("/verify-email/resend", controller.ResendVerification)
 		}
 		classroom := api.Group("/classroom")
-		classroom.Use(middleware.AuthDosenMiddleware())
+		classroom.Use(middleware.AuthMiddleware())
 		{
-			classroom.POST("/create", controller.CreateClassroom)
+			classroom.GET("", controller.ReadClassrooms)
+			classroom.POST("/join", controller.JoinClassroom)
+			classroom.POST("/create", middleware.AuthDosenMiddleware(), controller.CreateClassroom)
+
+			classroom.GET("/:id", controller.ReadDetailClassroom)
+			classroom.DELETE("/:id/delete", middleware.AuthDosenMiddleware(), controller.DestroyClassroom)
+			classroom.PATCH("/:id/update", middleware.AuthDosenMiddleware(), controller.UpdateClassroom)
+			
+			classroom.POST("/:id/announcement/create", middleware.AuthDosenMiddleware(), controller.CreateAnnouncement)
+			classroom.POST("/:id/announcement/delete", middleware.AuthDosenMiddleware(), controller.DeleteAnnouncement)
+
 		}
 	}
 	return r

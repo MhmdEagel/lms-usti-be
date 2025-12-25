@@ -13,6 +13,7 @@ func ConnectDatabase() {
 	if err != nil {
 		panic(err.Error())
 	}
-	database.AutoMigrate(&User{}, &VerificationToken{}, &Classroom{})
+	database.AutoMigrate(&User{}, &VerificationToken{}, &Classroom{}, &Announcement{})
 	DB = database
 }
+

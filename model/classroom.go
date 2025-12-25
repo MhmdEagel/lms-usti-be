@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,15 +11,24 @@ import (
 )
 
 type Classroom struct {
-	ID         string    `gorm:"primary_key;not null"`
-	ClassCode  string    `json:"class_code" gorm:"unique;not null"`
-	ClassName  string    `json:"class_name" gorm:"not null"`
-	Term       int       `json:"term" gorm:"not null"`
-	RoomNumber int       `json:"room_number" gorm:"not null"`
-	Day        int       `json:"day" gorm:"not null"`
-	ClassStart time.Time `json:"class_start" gorm:"not null"`
-	ClassEnd   time.Time `json:"class_end" gorm:"not null"`
-	DosenId    string
+	ID                    string         `json:"id" gorm:"unique;primaryKey;not null"`
+	ClassCode             string         `json:"class_code" gorm:"unique;not null"`
+	ClassName             string         `json:"class_name" gorm:"not null"`
+	Term                  int            `json:"term" gorm:"not null"`
+	RoomNumber            int            `json:"room_number" gorm:"not null"`
+	Day                   int            `json:"day" gorm:"not null"`
+	ClassStart            time.Time      `json:"class_start" gorm:"not null"`
+	ClassEnd              time.Time      `json:"class_end" gorm:"not null"`
+	DosenId               string         `json:"-"`
+	Dosen                 User           `json:"dosen" gorm:"foreignKey:DosenId"`
+	ClassroomMahasiswa    []*User        `json:"mahasiswa,omitempty" gorm:"many2many:classroom_mahasiswas;constraint:OnDelete:CASCADE;"`
+	ClassroomAnnouncement []Announcement `json:"announcements,omitempty" gorm:"foreignKey:ClassroomId;constraint:OnDelete:CASCADE;"`
+}
+type ClassroomMahasiswa struct {
+	UserId     string    `gorm:"primaryKey"`
+	ClassroomId string    `gorm:"primaryKey"`
+	User        User      `gorm:"foreignKey:UserId;constraint:OnDelete:CASCADE"`
+	Classroom   Classroom `gorm:"foreignKey:ClassroomID;constraint:OnDelete:CASCADE"`
 }
 
 func (classroom *Classroom) BeforeCreate(tx *gorm.DB) error {
@@ -43,7 +53,7 @@ type CreateClassroomInput struct {
 	Day        int       `json:"day" binding:"required"`
 	ClassStart time.Time `json:"class_start" binding:"required"`
 	ClassEnd   time.Time `json:"class_end" binding:"required"`
-	DosenId    string    `binding:"required"`
+	DosenId    string
 }
 
 func NewClassroom(classroomInput *CreateClassroomInput) *Classroom {
@@ -55,4 +65,40 @@ func StoreClassroom(classroom *Classroom) error {
 		return res.Error
 	}
 	return nil
+}
+
+func EnrollUser(user *User, classroom *Classroom) error {
+	model := ClassroomMahasiswa{
+		UserId:     user.ID,
+		ClassroomId: classroom.ID,
+	}
+	return DB.Create(model).Error
+}
+
+func DeleteClassroom(id, userId string) error {
+	if query := DB.Where("id = ?", id).Where("dosen_id = ?", userId).Delete(&Classroom{}); query.Error != nil {
+		return query.Error
+	}
+	return nil
+}
+
+func GetDetailClassroom(id string) (*Classroom, error) {
+	var classroom Classroom
+	res := DB.Preload("Dosen").First(&classroom, "id = ?", id)
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return nil, errors.New("kelas tidak ditemukan")
+		}
+		return nil, res.Error
+	}
+	return &classroom, nil
+}
+
+func GetDetailClassroomByClassCode(classCode string) (*Classroom, error) {
+	var classroom Classroom
+	res := DB.First(&classroom, "class_code = ?", classCode)
+	if res.Error != nil {
+		return nil, res.Error
+	}
+	return &classroom, nil
 }

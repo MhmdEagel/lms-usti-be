@@ -22,21 +22,27 @@ func Login(c *gin.Context) {
 	}
 	res, err := model.GetUserByEmail(body.Email)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email or password is incorrect"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email tidak ditemukan"})
 		return
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong."})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "terjadi kesalahan."})
+		return
+	}
+	if !res.EmailVerified.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "email belum diverifikasi"})
 		return
 	}
 	if lib.IsPasswordMatch(res.Password, body.Password) {
-		token, err := lib.CreateToken(res.Fullname, res.Email, res.Role)
+		token, err := lib.CreateToken(res.Fullname, res.Email, res.Role, res.ID)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Something went wrong."})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "terjadi kesalahan."})
 		}
 		c.JSON(http.StatusOK, gin.H{"token": token})
 		return
 	}
+	c.JSON(http.StatusUnauthorized, gin.H{"error": "email atau password salah."})
+
 }
 func Register(c *gin.Context) {
 	var body model.Register
@@ -106,7 +112,11 @@ func ResendVerification(c *gin.Context) {
 	}
 	user, err := model.GetUserByEmail(body.Email)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "email tidak ditemukan"})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "terjadi kesalahan"})
 		return
 	}
 	token := model.NewVerificationToken(user.Email)
