@@ -1,7 +1,6 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -23,9 +22,10 @@ type Classroom struct {
 	Dosen                 User           `json:"dosen" gorm:"foreignKey:DosenId"`
 	ClassroomMahasiswa    []*User        `json:"mahasiswa,omitempty" gorm:"many2many:classroom_mahasiswas;constraint:OnDelete:CASCADE;"`
 	ClassroomAnnouncement []Announcement `json:"announcements,omitempty" gorm:"foreignKey:ClassroomId;constraint:OnDelete:CASCADE;"`
+	Materials             []Material     `gorm:"foreignKey:ClassroomId"`
 }
 type ClassroomMahasiswa struct {
-	UserId     string    `gorm:"primaryKey"`
+	UserId      string    `gorm:"primaryKey"`
 	ClassroomId string    `gorm:"primaryKey"`
 	User        User      `gorm:"foreignKey:UserId;constraint:OnDelete:CASCADE"`
 	Classroom   Classroom `gorm:"foreignKey:ClassroomID;constraint:OnDelete:CASCADE"`
@@ -69,7 +69,7 @@ func StoreClassroom(classroom *Classroom) error {
 
 func EnrollUser(user *User, classroom *Classroom) error {
 	model := ClassroomMahasiswa{
-		UserId:     user.ID,
+		UserId:      user.ID,
 		ClassroomId: classroom.ID,
 	}
 	return DB.Create(model).Error
@@ -85,13 +85,7 @@ func DeleteClassroom(id, userId string) error {
 func GetDetailClassroom(id string) (*Classroom, error) {
 	var classroom Classroom
 	res := DB.Preload("Dosen").First(&classroom, "id = ?", id)
-	if res.Error != nil {
-		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-			return nil, errors.New("kelas tidak ditemukan")
-		}
-		return nil, res.Error
-	}
-	return &classroom, nil
+	return &classroom, res.Error
 }
 
 func GetDetailClassroomByClassCode(classCode string) (*Classroom, error) {

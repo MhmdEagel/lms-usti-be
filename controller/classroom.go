@@ -16,48 +16,46 @@ func CreateClassroom(c *gin.Context) {
 	var body model.CreateClassroomInput
 	if err := c.ShouldBindJSON(&body); err != nil {
 		msg := lib.GetValidationMessage(err.(validator.ValidationErrors))
-		c.JSON(http.StatusBadRequest, gin.H{"error": msg})
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": msg})
 		return
 	}
 	val, exist := c.Get("user")
 	user := val.(model.Me)
 	if !exist {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "terjadi kesalahan"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "terjadi kesalahan"})
 		return
 	}
 	body.DosenId = user.UserId
 	log.Println(body)
 	newClassroom := model.NewClassroom(&body)
 	if err := model.StoreClassroom(newClassroom); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "terjadi kesalahan"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "terjadi kesalahan"})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"message": "kelas berhasil dibuat"})
+	c.JSON(http.StatusCreated, gin.H{"status": "success", "message": "kelas berhasil dibuat"})
 }
 func ReadClassrooms(c *gin.Context) {
 	var user model.User
 	val, exist := c.Get("user")
 	if !exist {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "terjadi kesalahan"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "terjadi kesalahan"})
 		return
 	}
 	loginUser := val.(model.Me)
-	log.Println(user)
 	if err := model.DB.Preload("DosenClassrooms.Dosen").Preload("MahasiswaClassrooms.Dosen").Where("id = ?", loginUser.UserId).Preload("DosenClassrooms").Preload("MahasiswaClassrooms").First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "email tidak ditemukan"})
+			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "email tidak ditemukan"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "terjadi kesalahan"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "terjadi kesalahan"})
 		return
 	}
-	log.Println(user)
 	switch loginUser.Role {
 	case "DOSEN":
-		c.JSON(http.StatusOK, gin.H{"data": user.DosenClassrooms})
+		c.JSON(http.StatusOK, gin.H{"status": "success", "message": "classrooms fetched successfully", "data": user.DosenClassrooms})
 		return
 	case "MAHASISWA":
-		c.JSON(http.StatusOK, gin.H{"data": user.MahasiswaClassrooms})
+		c.JSON(http.StatusOK, gin.H{"status": "success", "message": "classrooms fetched successfully", "data": user.MahasiswaClassrooms})
 		return
 	}
 }
@@ -66,26 +64,30 @@ func ReadDetailClassroom(c *gin.Context) {
 	id := c.Param("id")
 	classroom, err := model.GetDetailClassroom(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "kelas tidak ditemukan"})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"status": "error", "message": "terjadi kesalahn"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": classroom})
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "classroom detail fethced successfully", "data": classroom})
 }
 
 func DestroyClassroom(c *gin.Context) {
 	id := c.Param("id")
 	val, exist := c.Get("user")
 	if !exist {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "terjadi kesalahan"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "terjadi kesalahan"})
 		return
 	}
 	user := val.(model.Me)
 	if err := model.DeleteClassroom(id, user.UserId); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "kelas tidak ditemukan"})
+			c.JSON(http.StatusNotFound, gin.H{"status": "error", "messasge": "kelas tidak ditemukan"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "terjadi kesalahan"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "terjadi kesalahan"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "kelas berhasil dihapus"})
@@ -163,11 +165,17 @@ func CreateAnnouncement(c *gin.Context) {
 	}
 
 	newAnnouncement := model.NewAnnouncement(&body, me.UserId, classroom.ID)
-	if err := model.StoreAnnouncement(newAnnouncement); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat pengumuman"})
+	if classroom.DosenId == me.UserId {
+		if err := model.StoreAnnouncement(newAnnouncement); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal membuat pengumuman"})
+			return
+		}
+		c.JSON(http.StatusCreated, gin.H{"message": "pengumuman berhasil dibuat"})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"message": "pengumuman berhasil dibuat"})
+
+	c.JSON(http.StatusUnauthorized, gin.H{"error": "kelas tidak ditemukan"})
+
 }
 
 func DeleteAnnouncement(c *gin.Context) {

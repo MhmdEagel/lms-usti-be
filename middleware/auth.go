@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/MhmdEagel/lms-usti-be/lib"
 	"github.com/MhmdEagel/lms-usti-be/model"
@@ -10,10 +11,16 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token := c.GetHeader("Authorization")
-		claims, err := lib.VerifyToken(token)
+		header := c.GetHeader("Authorization")
+		token := strings.Split(header, " ")
+		if token[0] != "Bearer" {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "error", "message": "unauthorized"})
+			c.Abort()
+			return
+		}
+		claims, err := lib.VerifyToken(token[1])
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized."})
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "error", "message": "unauthorized"})
 			c.Abort()
 			return
 		}
@@ -21,7 +28,6 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
 
 func AuthDosenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

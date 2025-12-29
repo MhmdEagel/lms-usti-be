@@ -9,6 +9,6 @@ import (
 func main() {
 	model.ConnectDatabase()
 	r := router.InitRouter()
-	r.Run(env.DEFAULT_PORT)
+	r.Run(env.BASE_URL)
 
 }

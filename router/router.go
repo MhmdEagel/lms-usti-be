@@ -8,6 +8,7 @@ import (
 
 func InitRouter() *gin.Engine {
 	r := gin.Default()
+	r.MaxMultipartMemory = 8 << 20
 	api := r.Group("/lms-usti-api")
 	{
 		api.GET("", controller.Test)
@@ -32,6 +33,8 @@ func InitRouter() *gin.Engine {
 			classroom.POST("/:id/announcement/create", middleware.AuthDosenMiddleware(), controller.CreateAnnouncement)
 			classroom.POST("/:id/announcement/delete", middleware.AuthDosenMiddleware(), controller.DeleteAnnouncement)
 
+			classroom.POST("/:id/material/upload", middleware.AuthDosenMiddleware(), controller.CreateMaterial)
+				
 		}
 	}
 	return r
